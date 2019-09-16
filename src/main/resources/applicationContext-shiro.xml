@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+
+        <context:component-scan base-package="com.itqf.servive"/>
+
+
+        <!--shiro跟spring整合-->
+        <!-- 1,配置SecerityManager配置 -->
+        <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+            <!--缓存管理-->
+            <property name="cacheManager" ref="cacheManager"></property>
+            <property name="realm" ref="usersRealm"></property>
+          <!-- <property name="sessionManager"></property>
+            <property name="rememberMeManager"></property>-->
+        </bean>
+
+
+        <!--2,配置缓存    -->
+        <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+            <property name="cacheManagerConfigFile" value="classpath:ehcache.xml"></property>
+        </bean>
+
+
+        <!--3、配置自定义realm
+          继承AuthorizingRealm
+        -->
+        <bean id="usersRealm" class="com.itqf.realm.UsersRealm"></bean>
+
+
+        <!--4,配置里lifecycleBean-->
+        <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"></bean>
+
+        <!--5,配置允许shiro注解在spring的容器中使用  必须在lifecycleBeanPostProcessor 后配置 -->
+
+        <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator" depends-on="lifecycleBeanPostProcessor">
+        </bean>
+        <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+            <property name="securityManager" ref="securityManager"></property>
+        </bean>
+
+        <!--6,配置shiroFilter  bean的id必须和web.xml文件中配置的DelegatingFilterProxy
+        的<filter-name>的值一致
+         web.xml uses the DelegatingFilterProxy to access this bean.
+        -->
+        <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+                <property name="securityManager" ref="securityManager"></property>
+                <!--登录页面-->
+                <property name="loginUrl" value="/toLogin"></property>
+                <property name="successUrl" value="/main"></property>
+                <property name="unauthorizedUrl" value="/unauthorizedUrl"></property>
+                <!--详细配置
+                 /** = authc  认证后(登录)才能访问
+                -->
+                <property name="filterChainDefinitions">
+                    <value>
+                        #匿名访问  没有登录访问
+                        /css/**=anon
+                        /images/**=anon
+                        /js/**=anon
+                        /login=anon
+                        /user/**=perms[sys:user:*]
+                        /show=user
+                        /**=authc
+                    </value>
+                </property>
+
+        </bean>
+
+
+
+
+
+</beans>        
